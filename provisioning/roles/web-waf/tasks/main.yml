@@ -2,14 +2,47 @@
   apt:
     name:
       - nginx
-      - libnginx-mod-security2
-      - zeek
-      - filebeat
+      - libnginx-mod-http-modsecurity
       - docker.io
       - docker-compose-plugin
       - nftables
     state: present
     update_cache: yes
+
+- name: Add Zeek GPG key
+  get_url:
+    url: https://download.opensuse.org/repositories/security:zeek/xUbuntu_{{ ansible_distribution_version }}/Release.key
+    dest: /usr/share/keyrings/zeek-archive-keyring.gpg
+    mode: '0644'
+
+- name: Add Zeek repository
+  apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/zeek-archive-keyring.gpg] https://download.opensuse.org/repositories/security:/zeek/xUbuntu_{{ ansible_distribution_version }}/ /"
+    state: present
+
+- name: Install Zeek
+  apt:
+    name: zeek
+    state: present
+    update_cache: yes    
+
+- name: Add Elastic GPG key
+  ansible.builtin.get_url:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    dest: /usr/share/keyrings/elastic.gpg
+    mode: '0644'
+
+- name: Add Elastic repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/elastic.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main"
+    state: present
+
+- name: Install Filebeat
+  ansible.builtin.apt:
+    name: filebeat
+    state: present
+    update_cache: yes
+
 
 - name: Create ELK directory
   file:
@@ -72,16 +105,16 @@
     enabled: yes
     state: started
 
+- name: Install OWASP CRS
+  apt:
+    name: modsecurity-crs
+    state: present
+
 - name: Enable ModSecurity
   lineinfile:
     path: /etc/modsecurity/modsecurity.conf
     regexp: '^SecRuleEngine'
     line: 'SecRuleEngine On'
-
-- name: Install OWASP CRS
-  apt:
-    name: modsecurity-crs
-    state: present
 
 - name: Configure Nginx rate limiting
   copy:
@@ -108,3 +141,4 @@
     nft add chain inet filter input { type filter hook input priority 0 \; } || true
     nft add rule inet filter input tcp flags syn tcp dport 80 limit rate 50/second accept || true
     nft add rule inet filter input tcp flags syn tcp dport 80 drop || true
+
