@@ -24,12 +24,16 @@
   hosts: attacker
   become: yes
   roles:
-    - role: user-access
+    - name: user-access
       user_access_username: user
       user_access_password: Password123
-      user_access_sudo: true
+      user_access_sudo: True
+    - name: client
 
-    - attacker
-
+- name: set up command logging
+  hosts: hosts
+  become: yes
+  roles:
     - role: sandbox-logging
-      slf_destination_port: '{% if hostvars["man"] is defined -%}514{%- else -%}515{%- endif %}'
+      slf_destination_port: '{% if hostvars["man"] is defined -%} 514 {%- else -%} 515 {%- endif %}'
+...
