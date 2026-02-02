@@ -24,10 +24,19 @@
   become: yes
   roles:
     - name: user-access
-      user_access_username: user
+      user_access_username: attacker
       user_access_password: Password123
       user_access_sudo: True
-    - name: client
+      
+- name: Set up web-waf
+  hosts: web-waf
+  become: yes
+  roles:
+    - name: user-access
+      user_access_username: webwaf
+      user_access_password: Password456
+      user_access_sudo: True
+
 
 - name: set up command logging
   hosts: hosts
