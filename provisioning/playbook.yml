@@ -1,0 +1,35 @@
+---
+
+- name: disable qxl
+  hosts:
+    - routers
+  gather_facts: yes
+  become: yes
+  tasks:
+    - include_role:
+        name: disable-qxl
+      when: ansible_os_family == 'Debian'
+
+- name: Web-WAF + Sensor + SIEM
+  hosts: web-waf
+  become: yes
+  vars:
+    elk_version: "8.12.0"
+    zeek_interface: "eth0"
+  roles:
+    - web-waf
+
+
+- name: Set up attacker
+  hosts: attacker
+  become: yes
+  roles:
+    - role: user-access
+      user_access_username: user
+      user_access_password: Password123
+      user_access_sudo: true
+
+    - attacker
+
+    - role: sandbox-logging
+      slf_destination_port: '{% if hostvars["man"] is defined -%}514{%- else -%}515{%- endif %}'

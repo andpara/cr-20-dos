@@ -1,0 +1,8 @@
+- name: Install attacker tools
+  apt:
+    name:
+      - wrk
+      - slowhttptest
+      - hping3
+    state: present
+    update_cache: yes

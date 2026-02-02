@@ -1,0 +1,110 @@
+- name: Install base packages
+  apt:
+    name:
+      - nginx
+      - libnginx-mod-security2
+      - zeek
+      - filebeat
+      - docker.io
+      - docker-compose-plugin
+      - nftables
+    state: present
+    update_cache: yes
+
+- name: Create ELK directory
+  file:
+    path: /opt/elk
+    state: directory
+
+- name: Deploy docker-compose.yml for ELK
+  copy:
+    dest: /opt/elk/docker-compose.yml
+    content: |
+      services:
+        elasticsearch:
+          image: docker.elastic.co/elasticsearch/elasticsearch:{{ elk_version }}
+          environment:
+            - discovery.type=single-node
+            - xpack.security.enabled=false
+          ports:
+            - "9200:9200"
+
+        kibana:
+          image: docker.elastic.co/kibana/kibana:{{ elk_version }}
+          environment:
+            - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+          ports:
+            - "5601:5601"
+
+- name: Start ELK stack
+  shell: docker compose up -d
+  args:
+    chdir: /opt/elk
+
+- name: Configure Zeek interface
+  lineinfile:
+    path: /opt/zeek/etc/node.cfg
+    regexp: '^interface='
+    line: "interface={{ zeek_interface }}"
+
+- name: Deploy Zeek
+  shell: zeekctl deploy
+
+- name: Configure Filebeat
+  copy:
+    dest: /etc/filebeat/filebeat.yml
+    content: |
+      filebeat.inputs:
+        - type: filestream
+          paths:
+            - /opt/zeek/logs/current/*.log
+            - /var/log/nginx/*.log
+
+      output.elasticsearch:
+        hosts: ["http://localhost:9200"]
+
+      setup.kibana:
+        host: "http://localhost:5601"
+
+- name: Enable and start Filebeat
+  systemd:
+    name: filebeat
+    enabled: yes
+    state: started
+
+- name: Enable ModSecurity
+  lineinfile:
+    path: /etc/modsecurity/modsecurity.conf
+    regexp: '^SecRuleEngine'
+    line: 'SecRuleEngine On'
+
+- name: Install OWASP CRS
+  apt:
+    name: modsecurity-crs
+    state: present
+
+- name: Configure Nginx rate limiting
+  copy:
+    dest: /etc/nginx/conf.d/waf.conf
+    content: |
+      limit_req_zone $binary_remote_addr zone=req_per_ip:10m rate=5r/s;
+
+      server {
+        listen 80;
+        location / {
+          limit_req zone=req_per_ip burst=20 nodelay;
+          proxy_pass http://127.0.0.1:8080;
+        }
+      }
+
+- name: Restart Nginx
+  service:
+    name: nginx
+    state: restarted
+
+- name: Configure nftables SYN rate limit
+  shell: |
+    nft add table inet filter || true
+    nft add chain inet filter input { type filter hook input priority 0 \; } || true
+    nft add rule inet filter input tcp flags syn tcp dport 80 limit rate 50/second accept || true
+    nft add rule inet filter input tcp flags syn tcp dport 80 drop || true

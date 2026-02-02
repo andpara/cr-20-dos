@@ -1,0 +1,45 @@
+name: cr-20-dos
+hosts:
+  - name: attacker
+    base_box:
+      image: ubuntu-noble-x86_64
+      mgmt_user: ubuntu
+      mgmt_protocol: ssh
+    flavor: standard.small
+    hidden: false
+  - name: web-waf
+    base_box:
+      image: ubuntu-noble-x86_64
+      mgmt_user: ubuntu
+      mgmt_protocol: ssh
+    flavor: standard.small
+    hidden: false
+routers:
+  - name: router
+    base_box:
+      image: debian-12-x86_64
+      man_user: debian
+    flavor: standard.small
+networks:
+  - name: network-2
+    cidr: 192.168.10.0/24
+    accessible_by_user: false
+    hidden: false
+net_mappings:
+  - host: attacker
+    network: network-2
+    ip: 192.168.10.75
+  - host: web-waf
+    network: network-2
+    ip: 192.168.10.85
+router_mappings:
+  - router: router
+    network: network-2
+    ip: 192.168.10.1
+groups: []
+
+
+
+
+
+
