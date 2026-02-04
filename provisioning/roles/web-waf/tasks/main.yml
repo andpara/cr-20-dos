@@ -8,11 +8,11 @@
     state: present
     update_cache: yes
 
-- name: Install Docker Compose plugin (22.04+)
+- name: Install Docker Compose plugin (20.04+)
   apt:
     name: docker-compose-plugin
     state: present
-  when: ansible_distribution_version is version('22.04', '>=')
+  when: ansible_distribution_version is version('20.04', '>=')
 
 - name: Install Docker Compose (20.04)
   apt:
@@ -153,5 +153,6 @@
     nft add chain inet filter input { type filter hook input priority 0 \; } || true
     nft add rule inet filter input tcp flags syn tcp dport 80 limit rate 50/second accept || true
     nft add rule inet filter input tcp flags syn tcp dport 80 drop || true
+
 
 
