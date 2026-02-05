@@ -39,27 +39,29 @@
       - docker-compose-plugin
     state: present
 
-- name: Add Zeek GPG key
+- name: Download Zeek GPG key (ASCII format)
   ansible.builtin.get_url:
-    url: https://download.opensuse.org/repositories/security:zeek/xUbuntu_24.04/Release.key
-    dest: /usr/share/keyrings/security_zeek.gpg
+    url: "https://download.opensuse.org/repositories/security:zeek/xUbuntu_24.04/Release.key"
+    dest: /tmp/zeek.key
     mode: '0644'
+
+- name: Convert Zeek key to binary format (Dearmor)
+  ansible.builtin.shell: 
+    cmd: "gpg --dearmor < /tmp/zeek.key > /usr/share/keyrings/security_zeek.gpg"
+    creates: /usr/share/keyrings/security_zeek.gpg
 
 - name: Add Zeek repository
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/security_zeek.gpg] http://download.opensuse.org/repositories/security:/zeek/xUbuntu_24.04/ /"
+    repo: "deb [signed-by=/usr/share/keyrings/security_zeek.gpg] https://download.opensuse.org /"
     state: present
-
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600  # Ενημέρωση της cache αν δεν έχει γίνει τελευταία 1 ώρα
 
 - name: Install Zeek
   ansible.builtin.apt:
     name: zeek
     state: present
     update_cache: yes
+
+
 
 - name: Add Elastic GPG key
   ansible.builtin.get_url:
@@ -176,6 +178,7 @@
     nft add chain inet filter input { type filter hook input priority 0 \; } || true
     nft add rule inet filter input tcp flags syn tcp dport 80 limit rate 50/second accept || true
     nft add rule inet filter input tcp flags syn tcp dport 80 drop || true
+
 
 
 
