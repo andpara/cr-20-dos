@@ -23,7 +23,7 @@
 
 - name: Add Docker repository
   apt_repository:
-    repo: "deb [arch=amd64] https://download.docker.com {{ ansible_distribution_release }} stable"
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
     state: present
     update_cache: yes
 
@@ -170,6 +170,7 @@
     nft add chain inet filter input { type filter hook input priority 0 \; } || true
     nft add rule inet filter input tcp flags syn tcp dport 80 limit rate 50/second accept || true
     nft add rule inet filter input tcp flags syn tcp dport 80 drop || true
+
 
 
 
