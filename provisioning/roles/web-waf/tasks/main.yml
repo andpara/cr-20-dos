@@ -52,7 +52,7 @@
 
 - name: Add Zeek repository
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/security_zeek.gpg] https://download.opensuse.org /"
+    repo: "deb [signed-by=/usr/share/keyrings/security_zeek.gpg] https://download.opensuse.org/repositories/security:zeek/xUbuntu_24.04 /"
     state: present
 
 - name: Install Zeek
@@ -178,6 +178,7 @@
     nft add chain inet filter input { type filter hook input priority 0 \; } || true
     nft add rule inet filter input tcp flags syn tcp dport 80 limit rate 50/second accept || true
     nft add rule inet filter input tcp flags syn tcp dport 80 drop || true
+
 
 
 
