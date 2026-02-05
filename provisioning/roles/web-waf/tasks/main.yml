@@ -18,7 +18,7 @@
 
 - name: Add Docker official GPG key
   apt_key:
-    url: https://download.docker.com
+    url: https://download.docker.com/linux/ubuntu/gpg
     state: present
 
 - name: Add Docker repository
@@ -170,6 +170,7 @@
     nft add chain inet filter input { type filter hook input priority 0 \; } || true
     nft add rule inet filter input tcp flags syn tcp dport 80 limit rate 50/second accept || true
     nft add rule inet filter input tcp flags syn tcp dport 80 drop || true
+
 
 
 
