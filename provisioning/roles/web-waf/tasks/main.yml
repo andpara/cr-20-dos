@@ -16,16 +16,18 @@
       - gnupg
     state: present
 
-- name: Add Docker official GPG key
+- name: Add Docker official GPG key to trusted keyring
   apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
     state: present
+    keyring: /usr/share/keyrings/docker-archive-keyring.gpg
 
 - name: Add Docker repository
   apt_repository:
-    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu focal stable"
     state: present
     update_cache: yes
+
 
 - name: Install Docker and Compose Plugin
   apt:
@@ -37,23 +39,27 @@
       - docker-compose-plugin
     state: present
 
-
 - name: Add Zeek GPG key
-  get_url:
-    url: https://download.opensuse.org/repositories/security:zeek/xUbuntu_{{ ansible_distribution_version }}/Release.key
-    dest: /usr/share/keyrings/zeek-archive-keyring.gpg
+  ansible.builtin.get_url:
+    url: https://download.opensuse.org/repositories/security:zeek/xUbuntu_24.04/Release.key
+    dest: /usr/share/keyrings/security_zeek.gpg
     mode: '0644'
 
 - name: Add Zeek repository
-  apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/zeek-archive-keyring.gpg] https://download.opensuse.org/repositories/security:/zeek/xUbuntu_{{ ansible_distribution_version }}/ /"
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/security_zeek.gpg] http://download.opensuse.org/repositories/security:/zeek/xUbuntu_24.04/ /"
     state: present
 
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600  # Ενημέρωση της cache αν δεν έχει γίνει τελευταία 1 ώρα
+
 - name: Install Zeek
-  apt:
+  ansible.builtin.apt:
     name: zeek
     state: present
-    update_cache: yes    
+    update_cache: yes
 
 - name: Add Elastic GPG key
   ansible.builtin.get_url:
@@ -170,6 +176,7 @@
     nft add chain inet filter input { type filter hook input priority 0 \; } || true
     nft add rule inet filter input tcp flags syn tcp dport 80 limit rate 50/second accept || true
     nft add rule inet filter input tcp flags syn tcp dport 80 drop || true
+
 
 
 
